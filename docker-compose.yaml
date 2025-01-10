@@ -1,0 +1,27 @@
+#version: '3.9'
+services:
+  ariane:
+    build:
+      context: ./ariane
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - falcon
+
+  falcon:
+    build:
+      context: ./falcon
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+
+  redis:
+    build:
+      context: ./redis
+      dockerfile: Dockerfile
+    ports:
+      - "6399:6399"
+

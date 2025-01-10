@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: frontend
+        image: 10.0.0.11:3000/project-ariane:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: BACKEND_HOST
+          value: backend-service
+        - name: BACKEND_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: BACKEND_PORT
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+    nodePort: 30080
+  type: NodePort
+
