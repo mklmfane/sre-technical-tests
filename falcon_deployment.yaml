@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: project-falcon
+        image: saragoza68/jenkis-test-redis
         ports:
         - containerPort: 4000
         env:
