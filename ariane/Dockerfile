@@ -1,7 +1,7 @@
 # Use the official Node.js image
 FROM node:18-alpine
 
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update -y && apt-get install -y curl
 
 # Set the working directory in the container
 WORKDIR /app
