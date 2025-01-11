@@ -7,7 +7,12 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: backend
+      app: backend    
+    ports:
+    - protocol: TCP
+      port: 4000
+      targetPort: 4000
+    type: ClusterIP  
   template:
     metadata:
       labels:
@@ -28,7 +33,7 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: app-config
-              key: REDIS_PORT
+              key: REDIS_PORT              
 ---
 apiVersion: v1
 kind: Service
