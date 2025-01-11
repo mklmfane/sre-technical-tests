@@ -12,21 +12,16 @@ spec:
       labels:
         app: frontend
     spec:
+      nodeSelector:
+        image-ready: "true"  # Schedule only on nodes with this label
       imagePullSecrets:
-      - name: regcred
+      - name: regcred  
       containers:
       - name: frontend
-        image: 10.0.0.11:3000/project-ariane:latest
+        image: saragoza68/sre-technical-tests-ariane:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
-        env:
-        - name: BACKEND_HOST
-          value: backend-service
-        - name: BACKEND_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: app-config
-              key: BACKEND_PORT
 ---
 apiVersion: v1
 kind: Service
