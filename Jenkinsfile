@@ -40,70 +40,54 @@ pipeline {
             }
         }
 
-        stage('Login to DockerHub to push images to dockerhub container registry') {
+       stage('Login to DockerHub to tag and push docker images to my dockerhub registry') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials-id', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     script {
                         sh '''
-                            set -e
+                        set -e
         
-                            # Check if the pass store is already initialized
-                            if ! pass ls > /dev/null 2>&1; then
-                                echo "Initializing pass store..."
-                                pass init "AB4DAA5051BD73D7D0CEE1B1BB10C55A69E70712" || {
-                                    echo "Failed to initialize pass store! Exiting..."
+                        # Ensure Docker config directory exists
+                        mkdir -p ~/.docker
+        
+                        # Create or update Docker config with credsStore set to 'pass'
+                        echo '{}' | jq '.credsStore = "pass"' > ~/.docker/config.json
+        
+                        # Check if Docker is already logged in
+                        if docker --config ~/.docker info > /dev/null 2>&1; then
+                            echo "Docker is already logged in."
+                        else
+                            echo "Logging into Docker Hub..."
+                            echo "$DOCKER_PASSWORD" | docker --config ~/.docker login -u "$DOCKER_USERNAME" --password-stdin || {
+                                echo "Docker login failed! Check your credentials."
+                                exit 1
+                            }
+                        fi
+        
+                        echo "Docker login succeeded."
+        
+                        # Tag and push each image
+                        for image in jenkis-test-ariane jenkis-test-falcon jenkis-test-redis; do
+                            docker tag $image:latest $DOCKER_USERNAME/$image:latest
+        
+                            # Push images with retries
+                            for attempt in $(seq 1 3); do
+                                echo "Attempting to push $DOCKER_USERNAME/$image:latest (Attempt $attempt)"
+                                docker push $DOCKER_USERNAME/$image:latest && break || sleep 5
+                                if [ "$attempt" -eq 3 ]; then
+                                    echo "Failed to push $DOCKER_USERNAME/$image:latest after 3 attempts. Exiting..."
                                     exit 1
-                                }
-                            else
-                                echo "Pass store is already initialized."
-                            fi
+                                fi
+                            done
+                        done
         
-                            # Create or update Docker config with credsStore set to 'pass'
-                            mkdir -p ~/.docker
-                            echo '{}' | jq '.credsStore = "pass"' > ~/.docker/config.json
-        
-                            # Check if Docker is already logged in
-                            if docker --config ~/.docker info > /dev/null 2>&1; then
-                                echo "Docker is already logged in."
-                            else
-                                echo "Logging into Docker Hub..."
-                                echo "$DOCKER_PASSWORD" | docker --config ~/.docker login -u "$DOCKER_USERNAME" --password-stdin || {
-                                    echo "Docker login failed! Check your credentials."
-                                    exit 1
-                                }
-                            fi
-        
-                            echo "Docker login succeeded."
-                            
-                            # Define DockerHub repository and tags
-                            DOCKER_REPO="$DOCKER_USERNAME"
-
-                            # Tag and push each image
-                            docker tag jenkis-test-ariane:latest $DOCKER_REPO/jenkis-test-ariane:latest
-                            docker tag jenkis-test-falcon:latest $DOCKER_REPO/jenkis-test-falcon:latest
-                            docker tag jenkis-test-redis:latest $DOCKER_REPO/jenkis-test-redis:latest
-
-                            docker push $DOCKER_REPO/jenkis-test-ariane:latest || {
-                                echo "Failed to push jenkis-test-ariane image! Exiting..."
-                                exit 1
-                            }
-
-                            docker push $DOCKER_REPO/jenkis-test-falcon:latest || {
-                                echo "Failed to push jenkis-test-falcon image! Exiting..."
-                                exit 1
-                            }
-
-                            docker push $DOCKER_REPO/jenkis-test-redis:latest || {
-                                echo "Failed to push jenkis-test-redis image! Exiting..."
-                                exit 1
-                            }
-
-                            echo "Docker images tagged and pushed successfully."
+                        echo "All images pushed successfully."
                         '''
                     }
                 }
             }
         }
+
 
         
         stage('Create Docker Secret for Kubernetes') {
@@ -157,8 +141,24 @@ EOF
                         sh '''
                         curl -LO https://dl.k8s.io/release/v1.32.0/bin/linux/amd64/kubectl
                         chmod +x ./kubectl
+                        
+                        ./kubectl apply -f configmap.yaml || {
+                            echo "Failed to kubernetes configmap!"
+                            exit 1
+                        }
+                        
                         ./kubectl apply -f ariane_deployment.yaml || {
-                            echo "Failed to apply Kubernetes deployment!"
+                            echo "Failed to apply Frontend deployment!"
+                            exit 1
+                        }
+                        
+                        ./kubectl apply -f falcon_deployment.yaml || {
+                            echo "Failed to apply Backend deployment!"
+                            exit 1
+                        }
+                        
+                        ./kubectl apply -f redis_deployment.yaml || {
+                            echo "Failed to apply Backend deployment!"
                             exit 1
                         }
                         '''
