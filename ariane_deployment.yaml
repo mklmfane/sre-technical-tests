@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend-deployment
+  namespace: jenkins
 spec:
   replicas: 2
   selector:
@@ -12,10 +13,8 @@ spec:
       labels:
         app: frontend
     spec:
-      nodeSelector:
-        image-ready: "true"  # Schedule only on nodes with this label
       imagePullSecrets:
-      - name: regcred  
+      - name: jenkins  
       containers:
       - name: frontend
         image: saragoza68/sre-technical-tests-ariane:latest
@@ -34,6 +33,5 @@ spec:
   - protocol: TCP
     port: 3000
     targetPort: 3000
-    nodePort: 30080
+    nodePort: 30081
   type: NodePort
-
