@@ -110,6 +110,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: regcred
+  namespace: jenkins
 type: kubernetes.io/dockerconfigjson
 data:
   .dockerconfigjson: $(cat ../dockerconfigjson_base64)
