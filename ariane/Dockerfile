@@ -7,7 +7,7 @@ WORKDIR /app
 # Copy package.json and package-lock.json to the container
 COPY package.json package-lock.json ./
 
-RUN apt-get update -y && apt-get install -y curl
+RUN apk add --no-cache curl
 
 # Install dependencies
 RUN npm install
