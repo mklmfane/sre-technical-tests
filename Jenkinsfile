@@ -7,34 +7,26 @@ pipeline {
                 script {
                     git branch: 'master',
                         url: 'https://github.com/mklmfane/sre-technical-tests.git'
-                    sh '''
-                        echo "Checking repository contents after cloning:"
-                        ls -l
-                    '''
                 }
             }
-        } 
+        }
 
         stage('Debug File Check') {
             steps {
                 script {
-                    dir('/home/vagrant/workspace/jenkis-test') {
-                    sh '''
-                        echo "Current directory contents:"
-                        ls -l
-                    
+                    def currentDir = pwd()
+                    dir(currentDir) {
+                        sh '''
                         echo "Checking if docker-compose.yml exists..."
                     
                         docker compose version
                     
                         if [ ! -f docker-compose.yml ]; then
                             echo "docker-compose.yml not found in the current directory!"
-                            pwd
-                            ls -l
                             exit 1
                         fi
-                    '''
-                }
+                        '''
+                    }
                 }
             }
         }
@@ -43,13 +35,13 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        echo "Stopping and removing all running containers..."
-                        docker ps -q | xargs -r docker stop
-                        docker ps -aq | xargs -r docker rm
-                        
-                        echo "Cleaning up unused resources..."
-                        docker network prune -f
-                        docker volume prune -f
+                    echo "Stopping and removing all running containers..."
+                    docker ps -q | xargs -r docker stop
+                    docker ps -aq | xargs -r docker rm
+                    
+                    echo "Cleaning up unused resources..."
+                    docker network prune -f
+                    docker volume prune -f
                     '''
                 }
             }
@@ -58,78 +50,107 @@ pipeline {
         stage('Launch Docker Compose') {
             steps {
                 script {
-                    dir('/home/vagrant/workspace/jenkis-test') {
+                    def currentDir = pwd()
+                    dir(currentDir) {
                         sh '''
-                            pwd
-                            ls
-                            echo "Checking docker-compose.yml..."
-                            if [ ! -f docker-compose.yml ]; then
-                                echo "Error: docker-compose.yml not found!"
-                                exit 1
-                            fi
-                            
-                            cat docker-compose.yml
+                        pwd
+                        ls
+                        echo "Checking docker-compose.yml..."
+                        if [ ! -f docker-compose.yml ]; then
+                            echo "Error: docker-compose.yml not found!"
+                            exit 1
+                        fi
         
-                            echo "Launching Docker Compose..."
-                            docker compose up -d || { echo "Docker Compose launch failed!"; exit 1; }
+                        echo "Launching Docker Compose..."
+                        docker compose up -d || { echo "Docker Compose launch failed!"; exit 1; }
                         '''
                     }
                 }
             }
         }
 
-       
-       stage('Validate Docker Login') {
-         steps {
-            script {
-                sh '''
-                    echo "Checking Docker login status..."
-                    if ! docker info >/dev/null 2>&1; then
-                        echo "Logging into Docker Hub..."
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || {
-                        echo "Docker login failed!"
-                        exit 1
-                    }
-                    else
-                        echo "Docker is already logged in."
-                    fi
-                '''
-         }
-        }
-        }
-                
+        stage('Login to DockerHub') {
+            steps {
+                withCredentials([
+                    usernamePassword(credentialsId: 'docker-hub-credentials-id', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD'),
+                    usernamePassword(credentialsId: 'dockerhub-credentials-token', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_TOKEN')]) {
+                    script {
+                        sh '''
+				# Check if the required environment variables are set
+				if [[ -z "$DOCKERHUB_TOKEN" || -z "$DOCKER_USER" || -z "$DOCKER_PASSWORD" ]]; then
+				  echo "Error: Environment variables DOCKERHUB_TOKEN, DOCKER_USER, and DOCKER_PASSWORD must be set."
+				  exit 1
+				fi
 
-       stage('Login to DockerHub to tag and push docker images to my dockerhub registry') {
+				#Logout from existing dockerhub username as it will expire
+				docker logout
+
+				#Remove exiting gpg keys to avois passing store error
+				pass rm -rf docker-credential-helpers 2>/dev/null || true
+
+				# Step 1: Validate GPG key and initialize pass
+				echo "Validating GPG key..."
+
+				gppkey=$(gpg --list-keys | grep -oP '([A-F0-9]{40})') || {
+				    echo "No GPG key found! Please generate a GPG key using 'gpg --full-generate-key'."
+				    exit 1
+				}
+
+				echo "Initializing pass with GPG key..."
+
+				pass init "$gppkey" || {
+				    echo "Failed to initialize pass with the GPG key."
+				    exit 1
+				}
+
+				# Step 2: Insert Docker password into pass store
+				echo "Inserting Docker password into pass store..."
+
+			if echo "$DOCKER_PASSWORD" | pass insert --force --multiline docker-credential-helpers/docker-pass-initialized-check; then
+					echo "Successfully inserted the key into the keystore!"
+			else
+					echo "Failed to insert they key into the keystore!"
+			fi
+
+				# Step 3: Login to DockerHub using token
+				echo "Logging in to DockerHub using the token..."
+
+				if echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin; then
+				    sleep 30s
+				    echo "Docker login succeeded!"
+				else
+				    echo "Docker login failed! Check your credentials or PAT."
+				    exit 1
+				fi
+                        '''
+                    }
+                }
+            }
+        }
+
+
+        stage('Login to DockerHub and Push Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials-id', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     script {
                         sh '''
                         set -e
-        
-                        # Ensure Docker config directory exists
                         mkdir -p ~/.docker
-        
-                        # Create or update Docker config with credsStore set to 'pass'
                         echo '{}' | jq '.credsStore = "pass"' > ~/.docker/config.json
         
-                        # Check if Docker is already logged in
                         if docker --config ~/.docker info > /dev/null 2>&1; then
                             echo "Docker is already logged in."
                         else
                             echo "Logging into Docker Hub..."
-                            echo "$DOCKER_PASSWORD" | docker --config ~/.docker login -u "$DOCKER_USERNAME" --password-stdin || {
+                            echo "DOCKERHUB_PASSWORD" | docker --config ~/.docker login -u "$DOCKER_USERNAME" --password-stdin || {
                                 echo "Docker login failed! Check your credentials."
                                 exit 1
                             }
                         fi
         
-                        echo "Docker login succeeded."
-        
-                        # Tag and push each image
                         for image in jenkis-test-ariane jenkis-test-falcon jenkis-test-redis; do
                             docker tag $image:latest $DOCKER_USERNAME/$image:latest
         
-                            # Push images with retries
                             for attempt in $(seq 1 3); do
                                 echo "Attempting to push $DOCKER_USERNAME/$image:latest (Attempt $attempt)"
                                 docker push $DOCKER_USERNAME/$image:latest && break || sleep 5
@@ -147,23 +168,13 @@ pipeline {
             }
         }
 
-
-        
-        stage('Create Docker Secret for Kubernetes') {
+        stage('Create Kubernetes Docker Secret for Services') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials-id', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     script {
                         sh '''
-                        # Create Docker config JSON and encode it in base64
                         echo -n '{"auths":{"https://index.docker.io/v1/":{"username":"'"$DOCKER_USERNAME"'","password":"'"$DOCKER_PASSWORD"'","email":"mirceaconstantin58@gmail.com"}}}' | base64 -w 0 > ../dockerconfigjson_base64
 
-                        # Check if the file was created successfully
-                        if [ ! -s ../dockerconfigjson_base64 ]; then
-                            echo "Error: Docker config JSON base64 file not created!"
-                            exit 1
-                        fi
-
-                        # Generate Kubernetes Secret manifest
                         cat <<EOF > ../docker_secrets.yaml
 apiVersion: v1
 kind: Secret
@@ -175,7 +186,6 @@ data:
   .dockerconfigjson: $(cat ../dockerconfigjson_base64)
 EOF
 
-                        # Apply Kubernetes Secret
                         kubectl apply -f ../docker_secrets.yaml || {
                             echo "Failed to apply Kubernetes secret!"
                             exit 1
@@ -186,8 +196,7 @@ EOF
             }
         }
 
-
-        stage('First exercise') {
+        stage('Apply Kubernetes Resources') {
             steps {
                 withKubeCredentials(kubectlCredentials: [[
                     caCertificate: '', 
@@ -202,30 +211,11 @@ EOF
                         curl -LO https://dl.k8s.io/release/v1.32.0/bin/linux/amd64/kubectl
                         chmod +x ./kubectl
                         
-                        ./kubectl apply -f configmap.yaml || {
-                            echo "Failed to kubernetes configmap!"
-                            exit 1
-                        }
-                        
-                        ./kubectl apply -f persistent_volume.yaml || {
-                            echo "Persistent volumes were successfully created"
-                            exit 1
-                        }
-                        
-                        ./kubectl apply -f ariane_deployment.yaml || {
-                            echo "Failed to apply Frontend deployment!"
-                            exit 1
-                        }
-                        
-                        ./kubectl apply -f falcon_deployment.yaml || {
-                            echo "Failed to apply Backend deployment!"
-                            exit 1
-                        }
-                        
-                        ./kubectl apply -f redis_deployment.yaml || {
-                            echo "Failed to apply Backend deployment!"
-                            exit 1
-                        }
+                        ./kubectl apply -f configmap.yaml || exit 1
+                        ./kubectl apply -f persistent_volume.yaml || exit 1
+                        ./kubectl apply -f ariane_deployment.yaml || exit 1
+                        ./kubectl apply -f falcon_deployment.yaml || exit 1
+                        ./kubectl apply -f redis_deployment.yaml || exit 1
                         '''
                     }
                 }
