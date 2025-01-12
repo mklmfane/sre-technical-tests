@@ -4,41 +4,100 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'master', 
-                    url: 'https://github.com/mklmfane/sre-technical-tests.git'
+                script {
+                    git branch: 'master',
+                        url: 'https://github.com/mklmfane/sre-technical-tests.git'
+                    sh '''
+                        echo "Checking repository contents after cloning:"
+                        ls -l
+                    '''
+                }
+            }
+        } 
+
+        stage('Debug File Check') {
+            steps {
+                script {
+                    dir('/home/vagrant/workspace/jenkis-test') {
+                    sh '''
+                        echo "Current directory contents:"
+                        ls -l
+                    
+                        echo "Checking if docker-compose.yml exists..."
+                    
+                        docker compose version
+                    
+                        if [ ! -f docker-compose.yml ]; then
+                            echo "docker-compose.yml not found in the current directory!"
+                            pwd
+                            ls -l
+                            exit 1
+                        fi
+                    '''
+                }
+                }
+            }
+        }
+
+        stage('Clean Up Existing Containers') {
+            steps {
+                script {
+                    sh '''
+                        echo "Stopping and removing all running containers..."
+                        docker ps -q | xargs -r docker stop
+                        docker ps -aq | xargs -r docker rm
+                        
+                        echo "Cleaning up unused resources..."
+                        docker network prune -f
+                        docker volume prune -f
+                    '''
+                }
             }
         }
 
         stage('Launch Docker Compose') {
             steps {
                 script {
-                    dir('sre-technical-tests') {
+                    dir('/home/vagrant/workspace/jenkis-test') {
                         sh '''
-                            sudo chmod 666 /var/run/docker.sock
-                            sudo usermod -aG docker vagrant
-                            docker compose up -d
+                            pwd
+                            ls
+                            echo "Checking docker-compose.yml..."
+                            if [ ! -f docker-compose.yml ]; then
+                                echo "Error: docker-compose.yml not found!"
+                                exit 1
+                            fi
+                            
+                            cat docker-compose.yml
+        
+                            echo "Launching Docker Compose..."
+                            docker compose up -d || { echo "Docker Compose launch failed!"; exit 1; }
                         '''
                     }
                 }
             }
         }
 
-        stage('Initialize pass store') {
-            steps {
-                script {
-                    sh '''
-                      if ! gpg --list-keys | grep -q "AB4DAA5051BD73D7D0CEE1B1BB10C55A69E70712"; then
-                          echo "GPG key not found! Please add the key."
-                          exit 1
-                      fi
-                      if ! pass init "AB4DAA5051BD73D7D0CEE1B1BB10C55A69E70712"; then
-                          echo "Pass store initialization failed!"
-                          exit 1
-                      fi
-                    '''
-                }
-            }
+       
+       stage('Validate Docker Login') {
+         steps {
+            script {
+                sh '''
+                    echo "Checking Docker login status..."
+                    if ! docker info >/dev/null 2>&1; then
+                        echo "Logging into Docker Hub..."
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || {
+                        echo "Docker login failed!"
+                        exit 1
+                    }
+                    else
+                        echo "Docker is already logged in."
+                    fi
+                '''
+         }
         }
+        }
+                
 
        stage('Login to DockerHub to tag and push docker images to my dockerhub registry') {
             steps {
@@ -145,6 +204,11 @@ EOF
                         
                         ./kubectl apply -f configmap.yaml || {
                             echo "Failed to kubernetes configmap!"
+                            exit 1
+                        }
+                        
+                        ./kubectl apply -f persistent_volume.yaml || {
+                            echo "Persistent volumes were successfully created"
                             exit 1
                         }
                         
