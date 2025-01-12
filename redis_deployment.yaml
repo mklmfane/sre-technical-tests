@@ -31,6 +31,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis-service
+  namespace: jenkins  
 spec:
   selector:
     app: redis
@@ -38,4 +39,3 @@ spec:
   - protocol: TCP
     port: 6399
     targetPort: 6399
-
