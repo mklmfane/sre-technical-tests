@@ -53,16 +53,16 @@ pipeline {
                     def currentDir = pwd()
                     dir(currentDir) {
                         sh '''
-                        pwd
-                        ls
-                        echo "Checking docker-compose.yml..."
-                        if [ ! -f docker-compose.yml ]; then
-                            echo "Error: docker-compose.yml not found!"
-                            exit 1
-                        fi
-        
-                        echo "Launching Docker Compose..."
-                        docker compose up -d || { echo "Docker Compose launch failed!"; exit 1; }
+                            pwd
+                            ls
+                            echo "Checking docker-compose.yml..."
+                            if [ ! -f docker-compose.yml ]; then
+                                echo "Error: docker-compose.yml not found!"
+                                exit 1
+                            fi
+            
+                            echo "Launching Docker Compose..."
+                            docker compose up -d || { echo "Docker Compose launch failed!"; exit 1; }
                         '''
                     }
                 }
