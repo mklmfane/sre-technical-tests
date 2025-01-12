@@ -58,5 +58,7 @@ Deliverables:
 
 - main.yml playbook
   To test main.yaml, I launched the following command in ansible VM deployed by using vagrant.
-   
+  sudo ansible-playbook main.yaml -i localhost, --connection=local
+
+  I tracked in te file called "jenkins_output.txt" the output of the command above launched through jenkins pipeline.  
 
