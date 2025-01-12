@@ -189,7 +189,7 @@ Deliverables:
   The were the jenkins nodes which I used:
   ![alt text](image.png)
 
-   I also had connection to kubernetes master node from jenkins.
+   I have also connection to kubernetes master node from jenkins.
 
    ![alt text](image-1.png)
 
@@ -205,6 +205,7 @@ I used fot these exercise a Vagrantfile in which I deplo several virtual machine
 The template for the virtual machines can be foudn in Vagranfile togethe rwith all otehr files used for this prupose.
 I ran the command `vagrant up` to provision all the necessary Virtualbox VMs on my local computer.
 
+  The example that I used for the setup of all theses VMs can be found in this article https://devopscube.com/kubernetes-cluster-vagrant/
 
 
 - Documentation (README files) for each section explaining:
