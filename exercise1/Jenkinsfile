@@ -35,13 +35,13 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    echo "Stopping and removing all running containers..."
-                    docker ps -q | xargs -r docker stop
-                    docker ps -aq | xargs -r docker rm
-                    
-                    echo "Cleaning up unused resources..."
-                    docker network prune -f
-                    docker volume prune -f
+                        echo "Stopping and removing all running containers..."
+                        docker ps -q | xargs -r docker stop
+                        docker ps -aq | xargs -r docker rm
+                        
+                        echo "Cleaning up unused resources..."
+                        docker network prune -f
+                        docker volume prune -f
                     '''
                 }
             }
