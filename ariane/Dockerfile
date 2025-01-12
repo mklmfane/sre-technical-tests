@@ -7,6 +7,7 @@ WORKDIR /app
 # Copy package.json and package-lock.json to the container
 COPY package.json package-lock.json ./
 
+#Install curl for testing
 RUN apk add --no-cache curl
 
 # Install dependencies
