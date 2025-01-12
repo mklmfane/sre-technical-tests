@@ -18,7 +18,7 @@ spec:
       - name: jenkins  
       containers:
       - name: frontend
-        image: saragoza68/jenkis-test-ariane-1
+        image: saragoza68/jenkis-test-ariane
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
