@@ -191,6 +191,37 @@ Deliverables:
 ## General deliverables
 
 - All scripts and configuration files submitted in a Git repository OR a zipped folder.
+
+I used fot these exercise a Vagrantfile in which I deplo several virtual machines.
+The template for the virtual machines can be foudn in Vagranfile togethe rwith all otehr files used for this prupose.
+I ran the command `vagrant up` to provision all the necessary Virtualbox VMs on my local computer.
+
+
+
 - Documentation (README files) for each section explaining:
     - Setup and usage instructions.
+     
+     I used command "vagrant up" to provision locally the following VirtualBox VMs
+
+VBoxManage list vms | grep "vagrant-kubeadm" ##vagrant-kubeadm is teh folder where I provision all the virtualbox VMs
+
+These were the virtualbox VMs provisioned
+
+"vagrant-kubeadm-kubernetes_controlplane_1736601662917_85477" {9e3992a9-58e3-4c92-8b5c-c6e25acaf253}
+"vagrant-kubeadm-kubernetes_node01_1736601969146_9224" {d74735cd-19b9-4c1d-8e62-b439618e734d}
+"vagrant-kubeadm-kubernetes_node02_1736602273334_27143" {e6ae2ef1-2cf2-4975-9f9a-53691a5e745f}
+"vagrant-kubeadm-kubernetes_jenkins_1736606514919_24460" {4d4feba7-72f1-468a-bbbb-f13846c1733c}
+"vagrant-kubeadm-kubernetes_ansible_1736714405313_39276" {d9442b16-b144-4882-99d4-ab8a51819b23}
+
+    Vagrantfile is teh file containing the setup for all the VMs used for these exercise.
+    The folder caled "scripts "contains the initialization scripts for each VMs individually such as kubernetes controller, two kubernetes nodes, jenkins and ansible.
+    I used jenkins to managed all kubernetes node including by folloiwng up the instructions from this youtube link https://www.youtube.com/watch?v=rc7jZrA2aKk
+  
+    The file settings.yaml contains all the settings for the virtualbox VMs.
+
     - Assumptions and decisions made during implementation.
+       - I decided to use Jenkins for all the 3 exercises  by managing the kubernetes controller and kuberenetes nodes.
+       - I test jenkins pieplien fo rthe first exercise 
+       - I deployed terraform locally on my home omputer and I did not test Jenkinsfile for the second exercise to deploy EC2 VMs in my aws demo account.
+         But, I have an idea on how to provison EC2 VMs in terraform by creating a pipeline through Jenkinsfiel which I worte for teh exercise number 2.
+       - For the third exercise i use ansible VMs deployed by using virtubal box VM called ansible which I deployed by launching the command "vagrant up ansible" in teh fodler where i copied all these files.  

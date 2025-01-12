@@ -1,0 +1,138 @@
+---
+- name: DevOps/SRE Technical Test Provisioning
+  hosts: all
+  become: yes
+  vars:
+    encryption_key: mysecurekey12345
+    docker_image: public.ecr.aws/q0x2y8f9/nginx-demo
+    nginx_container_name: happy_roentgen
+    prrtprrt_url: https://gist.githubusercontent.com/slgevens/aa9a2fc52cb5fef8b41c1b11a8b7d3e3/raw/dc1e3e288967bd4818277e4688d1daf615225337/prrtprrt.txt
+    prrtprrt_local_path: "{{ ansible_env.PWD }}/files/prrtprrt.txt"
+
+    user_accounts:
+      jane.doe:
+        name: Jane DOE
+        mail: jane.doe@example.com
+        position: Software Engineer
+        office: London
+        login: jane.doe
+        passwd: "Bv3h!p2DqP%Q"
+        groups: ["sudo", "developers"]
+        ssh_keys:
+          - "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA1C4os6Tq2z5Z3DywAfPO6r6kVWQ8mYeXYxz2XJHwIWmJ1FI/JD/Z7/F1RMIo+dFWuEJ3ODT/MwtSox+bcbD09Rf0Ex33PLO6dsWeRrT6CVXf7j/Gs2P8WQv/N1MdaLJfjKnDUH6pAxPpE7XqO4+FOuz3zHKRQyPgzDUp5IV4OgxtNHJXSmIkNg4bdfF+JDk9OTvrZHg3W37zCVhrg=="
+      john.smith:
+        name: John SMITH
+        mail: john.smith@example.com
+        position: Systems Administrator
+        office: New York
+        login: john.smith
+        passwd: "Zm9c&NvV7LbA"
+        groups: ["sudo", "it"]
+        ssh_keys:
+          - "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAqseVTHgNcmBbdfXZUoWJSxs9hcC3Ao4EzXKiJ6OFTS8EbJSrBzKJqU7TLsTnGzR8BOl6pOEx6PmMt6LQqqqX2lToB4Ml6qYzM69Z4F8W79fEJ5MpGfdKUXOnKIl1Tg4nOEBZldUxEAYddShlCSrnJddvBfNz93OqmPAK3Rq1xlSlyB6FdOIeoI4rGO8UHyXyIuFP6P1BPXwWfsXn8SJd7GoJIN8AmBXmR=="
+      alice.williams:
+        name: Alice WILLIAMS
+        mail: alice.williams@example.com
+        position: DevOps Engineer
+        office: Berlin
+        login: alice.williams
+        passwd: "Tq7d#3BpO1pN"
+        groups: ["sudo", "infra"]
+        ssh_keys:
+          - "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAqrsZ5FVNl3hj9ZkXVzO7dAOXfBqhJsOtqW32EHYcpEXYf4J7Opk6TQQyPs8zF4PKMtkhfL9TV3HE9QWFkNO8RcFtoR9P6g8P4FoG68UqcMJOEY2fcbUJtXEN3HZ5OtTkpj9fPBZRJ3f2ExfUwYkIO6g6jOQsVmABbOeZsPyF1IXf4JtBQuAql3QJSUnE8G6UxWoHIVLJ6FqTzVJrLoRqOc9=="
+
+  tasks:
+    - name: Ensure all groups exist
+      group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - developers
+        - it
+        - infra
+
+    - name: Ensure local files directory exists
+      file:
+        path: "{{ ansible_env.PWD }}/files"
+        state: directory
+
+    - name: Set system open file limit for root
+      lineinfile:
+        path: /etc/security/limits.conf
+        line: "root    -    nofile    65536"
+        state: present
+
+    - name: Create user accounts
+      block:
+        - name: Create users with their details
+          user:
+            name: "{{ item.key }}"
+            comment: "{{ item.value.name }}"
+            password: "{{ item.value.passwd | password_hash('sha512', encryption_key) }}"
+            groups: "{{ ','.join(item.value.groups) }}"
+            shell: /bin/bash
+          loop: "{{ user_accounts | dict2items }}"
+
+        - name: Set up SSH keys
+          authorized_key:
+            user: "{{ item.key }}"
+            key: "{{ item.value.ssh_keys[0] }}"
+          loop: "{{ user_accounts | dict2items }}"
+
+        - name: Create info files for users
+          copy:
+            dest: "/home/{{ item.key }}/info"
+            content: |
+              Name: {{ item.value.name }}
+              Position: {{ item.value.position }}
+              Office: {{ item.value.office }}
+          loop: "{{ user_accounts | dict2items }}"
+
+    - name: Install Docker
+      package:
+        name: docker.io
+        state: present
+
+    - name: Run Docker container
+      docker_container:
+        name: "{{ nginx_container_name }}"
+        image: "{{ docker_image }}"
+        ports:
+          - "55000:55000"
+        state: started
+
+    - name: Download prrtprrt.txt locally
+      get_url:
+        url: "{{ prrtprrt_url }}"
+        dest: "{{ prrtprrt_local_path }}"
+
+    - name: Distribute prrtprrt.txt to users
+      copy:
+        src: "{{ prrtprrt_local_path }}"
+        dest: "/home/{{ item.key }}/prrtprrt.txt"
+        owner: "{{ item.key }}"
+        group: "{{ item.key }}"
+      loop: "{{ user_accounts | dict2items }}"
+
+    - name: Install nginx package
+      package:
+        name: nginx
+        state: present
+
+    - name: Configure nginx to forward requests to Docker container
+      blockinfile:
+        path: /etc/nginx/sites-available/default
+        block: |
+          server {
+              listen 80;
+              location / {
+                  proxy_pass http://127.0.0.1:55000;
+              }
+          }
+      notify: Restart nginx
+
+  handlers:
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: restarted
