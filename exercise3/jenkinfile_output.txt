@@ -1,0 +1,35 @@
+pipeline {
+    agent { label 'ansible' }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                script {
+                    git branch: 'master',
+                        url: 'https://github.com/mklmfane/sre-technical-tests.git'
+                }
+            }
+        }
+    
+        stage('Debug File Check') {
+            steps {
+                script {
+                    def currentDir = pwd()
+                    dir("${currentDir}/exercise3") {
+                        sh '''
+                           ls
+                           
+                           # Install Ansible if not installed
+                            if ! command -v ansible &> /dev/null; then
+                                sudo apt update -y && sudo apt install -y ansible
+                            fi
+
+                            # Run Ansible playbook
+                            ansible-playbook main.yaml -i localhost, --connection=local
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}
