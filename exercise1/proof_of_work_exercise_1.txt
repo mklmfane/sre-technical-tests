@@ -1,0 +1,550 @@
+Started by user Mircea Constantin
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on node01 in /home/vagrant/workspace/jenkis-test
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Clone Repository)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] git
+The recommended git tool is: NONE
+No credentials specified
+Fetching changes from the remote Git repository
+Checking out Revision 036e47e17ffa2a7c1178ded39003c14e313df4cc (refs/remotes/origin/master)
+Commit message: "Fix: DEployment changes to be fixed"
+ > git rev-parse --resolve-git-dir /home/vagrant/workspace/jenkis-test/.git # timeout=10
+ > git config remote.origin.url https://github.com/mklmfane/sre-technical-tests.git # timeout=10
+Fetching upstream changes from https://github.com/mklmfane/sre-technical-tests.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.43.0'
+ > git fetch --tags --force --progress -- https://github.com/mklmfane/sre-technical-tests.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/master^{commit} # timeout=10
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 036e47e17ffa2a7c1178ded39003c14e313df4cc # timeout=10
+ > git branch -a -v --no-abbrev # timeout=10
+ > git branch -D master # timeout=10
+ > git checkout -b master 036e47e17ffa2a7c1178ded39003c14e313df4cc # timeout=10
+ > git rev-list --no-walk 0cdce9eff7f103d6cdac862cc8e194b30f89d5ab # timeout=10
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Debug File Check)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] pwd
+[Pipeline] dir
+Running in /home/vagrant/workspace/jenkis-test
+[Pipeline] {
+[Pipeline] sh
++ echo Checking if docker-compose.yml exists...
+Checking if docker-compose.yml exists...
++ docker compose version
+Docker Compose version v2.32.1
++ [ ! -f docker-compose.yml ]
+[Pipeline] }
+[Pipeline] // dir
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Clean Up Existing Containers)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ echo Stopping and removing all running containers...
+Stopping and removing all running containers...
++ docker ps -q
++ xargs -r docker stop
+3e3bdb4f422c
+90f94d4c6f8d
+22fb3ac6af1d
++ docker ps -aq
++ xargs -r docker rm
+3e3bdb4f422c
+90f94d4c6f8d
+22fb3ac6af1d
++ echo Cleaning up unused resources...
+Cleaning up unused resources...
++ docker network prune -f
+Deleted Networks:
+jenkis-test_default
+
++ docker volume prune -f
+Deleted Volumes:
+d24a17868a99e09e65b0cbeeb5abcfd5c868e966012984668b5d5f927a144bc3
+
+Total reclaimed space: 88B
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Launch Docker Compose)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] pwd
+[Pipeline] dir
+Running in /home/vagrant/workspace/jenkis-test
+[Pipeline] {
+[Pipeline] sh
++ pwd
+/home/vagrant/workspace/jenkis-test
++ ls
+~
+ariane
+ariane_deployment.yaml
+configmap.yaml
+docker-compose.yml
+falcon
+falcon_deployment.yaml
+get-pip.py
+Jenkinsfile
+kubectl
+persistent_volume.yaml
+README.md
+redis
+redis_deployment.yaml
+sre-technical-tests
+sre-technical-tests@tmp
+test_redis.py
++ echo Checking docker-compose.yml...
+Checking docker-compose.yml...
++ [ ! -f docker-compose.yml ]
++ echo Launching Docker Compose...
+Launching Docker Compose...
++ docker compose up -d
+ Service redis  Building
+#0 building with "default" instance using docker driver
+
+#1 [redis internal] load build definition from Dockerfile
+#1 transferring dockerfile: 203B done
+#1 DONE 0.0s
+
+#2 [redis internal] load metadata for docker.io/library/redis:7-alpine
+#2 ...
+
+#3 [redis auth] library/redis:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#2 [redis internal] load metadata for docker.io/library/redis:7-alpine
+#2 DONE 2.9s
+
+#4 [redis internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [redis 1/1] FROM docker.io/library/redis:7-alpine@sha256:1bf97f21f01b0e7bd4b7b34a26d3b9d8086e41e70c10f262e8a9e0b49b5116a0
+#5 resolve docker.io/library/redis:7-alpine@sha256:1bf97f21f01b0e7bd4b7b34a26d3b9d8086e41e70c10f262e8a9e0b49b5116a0 0.0s done
+#5 sha256:98217a7f384c8774efa23afa27963ae63e1b6af6103f10fe8550e57ecfe3ff72 2.48kB / 2.48kB done
+#5 sha256:ee33180a84379744659cc28442b8c9754ced5a0253f2596602f51f7e70ec81f7 7.89kB / 7.89kB done
+#5 sha256:1bf97f21f01b0e7bd4b7b34a26d3b9d8086e41e70c10f262e8a9e0b49b5116a0 10.24kB / 10.24kB done
+#5 DONE 0.2s
+ Service redis  Built
+ Service falcon  Building
+
+#6 [redis] exporting to image
+#6 exporting layers done
+#6 writing image sha256:607dccb145a868539dc8101e876680ed02c772ef5bc99708406c555aef69093b done
+#6 naming to docker.io/library/jenkis-test-redis done
+#6 DONE 0.0s
+
+#7 [redis] resolving provenance for metadata file
+#7 DONE 0.0s
+
+#8 [falcon internal] load build definition from Dockerfile
+#8 transferring dockerfile: 520B done
+#8 DONE 0.0s
+
+#9 [falcon internal] load metadata for docker.io/library/golang:1.20-alpine
+#9 ...
+
+#10 [falcon auth] library/golang:pull token for registry-1.docker.io
+#10 DONE 0.0s
+
+#9 [falcon internal] load metadata for docker.io/library/golang:1.20-alpine
+#9 DONE 2.4s
+
+#11 [falcon internal] load .dockerignore
+#11 transferring context: 2B done
+#11 DONE 0.0s
+
+#12 [falcon 1/7] FROM docker.io/library/golang:1.20-alpine@sha256:e47f121850f4e276b2b210c56df3fda9191278dd84a3a442bfe0b09934462a8f
+#12 resolve docker.io/library/golang:1.20-alpine@sha256:e47f121850f4e276b2b210c56df3fda9191278dd84a3a442bfe0b09934462a8f 0.0s done
+#12 sha256:e47f121850f4e276b2b210c56df3fda9191278dd84a3a442bfe0b09934462a8f 1.65kB / 1.65kB done
+#12 sha256:008f5b5d4645836f4074cbd9f44c513ba7eb00bc3859f08bbfdba24fd4dae65d 1.36kB / 1.36kB done
+#12 sha256:71719a2da3d19db6340a72b90f937507cbcfcbcaf1fb12835a214d6e8c16a650 1.98kB / 1.98kB done
+#12 DONE 0.2s
+
+#13 [falcon internal] load build context
+#13 transferring context: 2.98kB done
+#13 DONE 0.0s
+
+#14 [falcon 2/7] WORKDIR /app
+#14 DONE 0.1s
+
+#15 [falcon 3/7] COPY go.mod go.sum ./
+#15 DONE 0.1s
+
+#16 [falcon 4/7] RUN go mod download
+#16 DONE 1.2s
+
+#17 [falcon 5/7] COPY . .
+#17 DONE 0.1s
+
+#18 [falcon 6/7] RUN go build -o main .
+#18 DONE 30.3s
+
+#19 [falcon 7/7] RUN apk add --no-cache redis
+#19 0.539 fetch https://dl-cdn.alpinelinux.org/alpine/v3.19/main/x86_64/APKINDEX.tar.gz
+#19 0.849 fetch https://dl-cdn.alpinelinux.org/alpine/v3.19/community/x86_64/APKINDEX.tar.gz
+#19 1.222 (1/1) Installing redis (7.2.7-r0)
+#19 1.266 Executing redis-7.2.7-r0.pre-install
+#19 1.345 Executing redis-7.2.7-r0.post-install
+#19 1.349 Executing busybox-1.36.1-r15.trigger
+#19 1.354 OK: 12 MiB in 17 packages
+#19 DONE 1.5s
+
+#20 [falcon] exporting to image
+#20 exporting layers
+#20 exporting layers 0.9s done
+#20 writing image sha256:6835e1b6f6e019d7f6e26c8739670f3ea100b373c0fe861b3d5e520f038f8f38
+#20 writing image sha256:6835e1b6f6e019d7f6e26c8739670f3ea100b373c0fe861b3d5e520f038f8f38 done
+#20 naming to docker.io/library/jenkis-test-falcon done
+#20 DONE 0.9s
+
+#21 [falcon] resolving provenance for metadata file
+ Service falcon  Built
+ Service ariane  Building
+#21 DONE 0.0s
+
+#22 [ariane internal] load build definition from Dockerfile
+#22 transferring dockerfile: 519B done
+#22 DONE 0.0s
+
+#23 [ariane internal] load metadata for docker.io/library/node:18-alpine
+#23 ...
+
+#24 [ariane auth] library/node:pull token for registry-1.docker.io
+#24 DONE 0.0s
+
+#23 [ariane internal] load metadata for docker.io/library/node:18-alpine
+#23 DONE 2.8s
+
+#25 [ariane internal] load .dockerignore
+#25 transferring context: 2B done
+#25 DONE 0.0s
+
+#26 [ariane 1/6] FROM docker.io/library/node:18-alpine@sha256:a24108da7089c2d293ceaa61fb8969ec10821e8efe25572e5abb10b1841eb70b
+#26 resolve docker.io/library/node:18-alpine@sha256:a24108da7089c2d293ceaa61fb8969ec10821e8efe25572e5abb10b1841eb70b 0.0s done
+#26 sha256:87a8a7369c7592b4ab4d132ba570e2b56c11c0fa289ff02594c91e51c98ad96d 6.18kB / 6.18kB done
+#26 sha256:a24108da7089c2d293ceaa61fb8969ec10821e8efe25572e5abb10b1841eb70b 7.67kB / 7.67kB done
+#26 sha256:ce927bbeecbcdb91a41d3bb64014bf44796eb06a35a4798fe0ebbfe3725024c6 1.72kB / 1.72kB done
+#26 DONE 0.2s
+
+#27 [ariane internal] load build context
+#27 transferring context: 23.39kB 0.0s done
+#27 DONE 0.1s
+
+#28 [ariane 2/6] WORKDIR /app
+#28 DONE 0.1s
+
+#29 [ariane 3/6] COPY package.json package-lock.json ./
+#29 DONE 0.1s
+
+#30 [ariane 4/6] RUN apk add --no-cache curl
+#30 0.310 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/main/x86_64/APKINDEX.tar.gz
+#30 0.592 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/community/x86_64/APKINDEX.tar.gz
+#30 1.047 (1/9) Installing brotli-libs (1.1.0-r2)
+#30 1.095 (2/9) Installing c-ares (1.34.3-r0)
+#30 1.130 (3/9) Installing libunistring (1.2-r0)
+#30 1.246 (4/9) Installing libidn2 (2.3.7-r0)
+#30 1.283 (5/9) Installing nghttp2-libs (1.64.0-r0)
+#30 1.317 (6/9) Installing libpsl (0.21.5-r3)
+#30 1.351 (7/9) Installing zstd-libs (1.5.6-r2)
+#30 1.393 (8/9) Installing libcurl (8.11.1-r0)
+#30 1.437 (9/9) Installing curl (8.11.1-r0)
+#30 1.472 Executing busybox-1.37.0-r9.trigger
+#30 1.493 OK: 14 MiB in 26 packages
+#30 DONE 1.6s
+
+#31 [ariane 5/6] RUN npm install
+#31 2.865 
+#31 2.865 added 58 packages, and audited 59 packages in 2s
+#31 2.866 
+#31 2.866 8 packages are looking for funding
+#31 2.866   run `npm fund` for details
+#31 2.890 
+#31 2.890 6 vulnerabilities (3 low, 3 high)
+#31 2.890 
+#31 2.890 To address all issues, run:
+#31 2.890   npm audit fix
+#31 2.890 
+#31 2.890 Run `npm audit` for details.
+#31 2.892 npm notice
+#31 2.892 npm notice New major version of npm available! 10.8.2 -> 11.0.0
+#31 2.892 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.0.0
+#31 2.892 npm notice To update run: npm install -g npm@11.0.0
+#31 2.892 npm notice
+#31 DONE 3.0s
+
+#32 [ariane 6/6] COPY . .
+#32 DONE 0.1s
+
+#33 [ariane] exporting to image
+#33 exporting layers
+#33 exporting layers 0.2s done
+#33 writing image sha256:7e8c3f16a3620e189539179e75c29d6d374ecfb193b23808c5f7cf13c97057a4 done
+#33 naming to docker.io/library/jenkis-test-ariane done
+#33 DONE 0.3s
+
+#34 [ariane] resolving provenance for metadata file
+ Service ariane  Built
+#34 DONE 0.0s
+ Network jenkis-test_default  Creating
+ Network jenkis-test_default  Created
+ Container jenkis-test-redis-1  Creating
+ Container jenkis-test-redis-1  Created
+ Container jenkis-test-falcon-1  Creating
+ Container jenkis-test-falcon-1  Created
+ Container jenkis-test-ariane-1  Creating
+ Container jenkis-test-ariane-1  Created
+ Container jenkis-test-redis-1  Starting
+ Container jenkis-test-redis-1  Started
+ Container jenkis-test-falcon-1  Starting
+ Container jenkis-test-falcon-1  Started
+ Container jenkis-test-ariane-1  Starting
+ Container jenkis-test-ariane-1  Started
+[Pipeline] }
+[Pipeline] // dir
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Login to DockerHub)
+[Pipeline] withCredentials
+Masking supported pattern matches of $DOCKER_PASSWORD or $DOCKERHUB_TOKEN
+[Pipeline] {
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ [[ -z ****
+/home/vagrant/workspace/jenkis-test@tmp/durable-17c9c31b/script.sh.copy: 3: [[: not found
++ -z saragoza68
+/home/vagrant/workspace/jenkis-test@tmp/durable-17c9c31b/script.sh.copy: 3: -z: not found
++ -z **** ]]
+/home/vagrant/workspace/jenkis-test@tmp/durable-17c9c31b/script.sh.copy: 3: -z: not found
++ docker logout
+Removing login credentials for https://index.docker.io/v1/
++ pass rm -rf docker-credential-helpers
+removed directory '/home/vagrant/.password-store/docker-credential-helpers/'
++ echo Validating GPG key...
+Validating GPG key...
++ gpg --list-keys
++ grep -oP ([A-F0-9]{40})
++ gppkey=AB4DAA5051BD73D7D0CEE1B1BB10C55A69E70712
++ echo Initializing pass with GPG key...
+Initializing pass with GPG key...
++ pass init AB4DAA5051BD73D7D0CEE1B1BB10C55A69E70712
+Password store initialized for AB4DAA5051BD73D7D0CEE1B1BB10C55A69E70712
++ echo Inserting Docker password into pass store...
+Inserting Docker password into pass store...
++ echo ****
++ pass insert --force --multiline docker-credential-helpers/docker-pass-initialized-check
+mkdir: created directory '/home/vagrant/.password-store/docker-credential-helpers'
+Enter contents of docker-credential-helpers/docker-pass-initialized-check and press Ctrl+D when finished:
+
++ echo Successfully inserted the key into the keystore!
+Successfully inserted the key into the keystore!
++ echo Logging in to DockerHub using the token...
+Logging in to DockerHub using the token...
++ echo ****
++ docker login -u saragoza68 --password-stdin
+Login Succeeded
++ sleep 30s
++ echo Docker login succeeded!
+Docker login succeeded!
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // withCredentials
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Login to DockerHub and Push Images)
+[Pipeline] withCredentials
+Masking supported pattern matches of $DOCKER_PASSWORD
+[Pipeline] {
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ set -e
++ mkdir -p /home/vagrant/.docker
++ echo {}
++ jq .credsStore = "pass"
++ docker --config /home/vagrant/.docker info
++ echo Docker is already logged in.
+Docker is already logged in.
++ docker tag jenkis-test-ariane:latest saragoza68/jenkis-test-ariane:latest
++ seq 1 3
++ echo Attempting to push saragoza68/jenkis-test-ariane:latest (Attempt 1)
+Attempting to push saragoza68/jenkis-test-ariane:latest (Attempt 1)
++ docker push saragoza68/jenkis-test-ariane:latest
+The push refers to repository [docker.io/saragoza68/jenkis-test-ariane]
+df6e417c7bf5: Preparing
+3fa3dd8809f3: Preparing
+2f34bd714dcf: Preparing
+4a9b324829e3: Preparing
+b5ffc8a9ddd1: Preparing
+0c8b251da863: Preparing
+f8b15c3cf52a: Preparing
+6a9b2cd2eb21: Preparing
+a0904247e36a: Preparing
+0c8b251da863: Waiting
+f8b15c3cf52a: Waiting
+6a9b2cd2eb21: Waiting
+a0904247e36a: Waiting
+4a9b324829e3: Pushed
+df6e417c7bf5: Pushed
+b5ffc8a9ddd1: Pushed
+0c8b251da863: Layer already exists
+f8b15c3cf52a: Layer already exists
+6a9b2cd2eb21: Layer already exists
+2f34bd714dcf: Pushed
+a0904247e36a: Layer already exists
+3fa3dd8809f3: Pushed
+latest: digest: sha256:65551eba9bd2f035a6b308bf9fbaf7c1890a0495382e3b4a7168e5fcafd1abda size: 2202
++ break
++ docker tag jenkis-test-falcon:latest saragoza68/jenkis-test-falcon:latest
++ seq 1 3
++ echo Attempting to push saragoza68/jenkis-test-falcon:latest (Attempt 1)
+Attempting to push saragoza68/jenkis-test-falcon:latest (Attempt 1)
++ docker push saragoza68/jenkis-test-falcon:latest
+The push refers to repository [docker.io/saragoza68/jenkis-test-falcon]
+ca51f1e44ef4: Preparing
+feea51d01c3c: Preparing
+0d0cc1da77e0: Preparing
+48bd225f5573: Preparing
+9021546913fc: Preparing
+91de2648e001: Preparing
+5f70bf18a086: Preparing
+00168ea4cecf: Preparing
+f89b05d5c0b7: Preparing
+6dd5a23a5acc: Preparing
+d4fc045c9e3a: Preparing
+91de2648e001: Waiting
+5f70bf18a086: Waiting
+00168ea4cecf: Waiting
+f89b05d5c0b7: Waiting
+6dd5a23a5acc: Waiting
+d4fc045c9e3a: Waiting
+9021546913fc: Pushed
+0d0cc1da77e0: Pushed
+48bd225f5573: Pushed
+5f70bf18a086: Layer already exists
+ca51f1e44ef4: Pushed
+00168ea4cecf: Layer already exists
+f89b05d5c0b7: Layer already exists
+6dd5a23a5acc: Layer already exists
+d4fc045c9e3a: Layer already exists
+91de2648e001: Pushed
+feea51d01c3c: Pushed
+latest: digest: sha256:f4f25c2cdf59163efb228edeefc54ccafb7a90d33f697d7c8c00611db45906e2 size: 2619
++ break
++ docker tag jenkis-test-redis:latest saragoza68/jenkis-test-redis:latest
++ seq 1 3
++ echo Attempting to push saragoza68/jenkis-test-redis:latest (Attempt 1)
+Attempting to push saragoza68/jenkis-test-redis:latest (Attempt 1)
++ docker push saragoza68/jenkis-test-redis:latest
+The push refers to repository [docker.io/saragoza68/jenkis-test-redis]
+5039a5695396: Preparing
+5f70bf18a086: Preparing
+5cd01d185550: Preparing
+d981a027dc6c: Preparing
+cc0ee72f533d: Preparing
+4aeddcdd3030: Preparing
+bae0823ad0f4: Preparing
+a0904247e36a: Preparing
+4aeddcdd3030: Waiting
+bae0823ad0f4: Waiting
+a0904247e36a: Waiting
+5f70bf18a086: Layer already exists
+cc0ee72f533d: Layer already exists
+5039a5695396: Layer already exists
+5cd01d185550: Layer already exists
+d981a027dc6c: Layer already exists
+bae0823ad0f4: Layer already exists
+4aeddcdd3030: Layer already exists
+a0904247e36a: Layer already exists
+latest: digest: sha256:0f0986ab11cb45503a8e3f9516a8cc402434f93a8c085d6cf42180d4afd3c0f6 size: 1987
++ break
++ echo All images pushed successfully.
+All images pushed successfully.
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // withCredentials
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Create Kubernetes Docker Secret for Services)
+[Pipeline] withCredentials
+Masking supported pattern matches of $DOCKER_PASSWORD
+[Pipeline] {
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ echo -n {"auths":{"https://index.docker.io/v1/":{"username":"saragoza68","password":"****","email":"mirceaconstantin58@gmail.com"}}}
++ base64 -w 0
++ cat ../dockerconfigjson_base64
++ cat
++ kubectl apply -f ../docker_secrets.yaml
+secret/regcred unchanged
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // withCredentials
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Apply Kubernetes Resources)
+[Pipeline] withKubeCredentials
+[Pipeline] {
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ curl -LO https://dl.k8s.io/release/v1.32.0/bin/linux/amd64/kubectl
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   138  100   138    0     0    419      0 --:--:-- --:--:-- --:--:--   419
+  0 54.6M    0  142k    0     0   125k      0  0:07:26  0:00:01  0:07:25  125k  1 54.6M    1  734k    0     0   331k      0  0:02:48  0:00:02  0:02:46  550k  1 54.6M    1 1067k    0     0   341k      0  0:02:43  0:00:03  0:02:40  466k  2 54.6M    2 1483k    0     0   359k      0  0:02:35  0:00:04  0:02:31  447k  3 54.6M    3 2027k    0     0   395k      0  0:02:21  0:00:05  0:02:16  472k  4 54.6M    4 2564k    0     0   415k      0  0:02:14  0:00:06  0:02:08  481k  5 54.6M    5 3044k    0     0   422k      0  0:02:12  0:00:07  0:02:05  462k  6 54.6M    6 3522k    0     0   430k      0  0:02:09  0:00:08  0:02:01  485k  6 54.6M    6 3714k    0     0   407k      0  0:02:17  0:00:09  0:02:08  446k  7 54.6M    7 4190k    0     0   413k      0  0:02:15  0:00:10  0:02:05  433k  8 54.6M    8 4862k    0     0   432k      0  0:02:09  0:00:11  0:01:58  453k  9 54.6M    9 5498k    0     0   453k      0  0:02:03  0:00:12  0:01:51  498k 20 54.6M   20 11.1M    0     0   871k      0  0:01:04  0:00:13  0:00:51 1601k 93 54.6M   93 51.0M    0     0  3702k      0  0:00:15  0:00:14  0:00:01 9729k100 54.6M  100 54.6M    0     0  3939k      0  0:00:14  0:00:14 --:--:-- 12.3M
++ chmod +x ./kubectl
++ ./kubectl apply -f configmap.yaml
+configmap/app-config unchanged
++ ./kubectl apply -f persistent_volume.yaml
+persistentvolume/redis-pv created
+persistentvolumeclaim/redis-pvc created
++ ./kubectl apply -f ariane_deployment.yaml
+deployment.apps/frontend-deployment unchanged
+service/frontend-service unchanged
++ ./kubectl apply -f falcon_deployment.yaml
+deployment.apps/backend-deployment unchanged
+service/backend-service unchanged
++ ./kubectl apply -f redis_deployment.yaml
+deployment.apps/redis-deployment unchanged
+service/redis-service unchanged
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[kubernetes-cli] kubectl configuration cleaned up
+[Pipeline] // withKubeCredentials
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS
