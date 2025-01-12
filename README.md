@@ -189,6 +189,10 @@ Deliverables:
   The were the jenkins nodes which I used:
   ![alt text](image.png)
 
+   I also had connection to kubernetes master node from jenkins.
+
+   ![alt text](image-1.png)
+
 - README file explaining:
   - CI/CD pipeline workflow.
 
