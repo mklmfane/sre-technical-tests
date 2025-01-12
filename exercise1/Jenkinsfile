@@ -15,7 +15,7 @@ pipeline {
             steps {
                 script {
                     def currentDir = pwd()
-                    dir(currentDir) {
+                    dir("${currentDir}/exercise1") {
                         sh '''
                         echo "Checking if docker-compose.yml exists..."
                     
