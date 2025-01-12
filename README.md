@@ -184,6 +184,11 @@ Implement a CI/CD pipeline using the tool/sotfware of your choice (Jenkins, Circ
 Deliverables:
 
 - Pipeline Configuration File for the chosen tool (e.g., .gitlab-ci.yml for GitLab CI, Jenkinsfile for Jenkins, etc.), containing described stages.
+  I decide to use Jenkins for all teh three exercises.
+
+  The were the jenkins nodes which I used:
+  ![alt text](image.png)
+
 - README file explaining:
   - CI/CD pipeline workflow.
 
