@@ -653,3 +653,6 @@ Apply complete! Resources: 14 added, 0 changed, 0 destroyed.
      - network.tf  - is used to vpc, EIP, NAT gateway as pre-quisite for the EC virtual machines
      - ec2.tf      - is used to create teh actual EC2 virtual machines.
      - .gitignore fule to prevent wirting tfvars file and state files in the repository.
+     - Jenkinsfile fo rteh pipeline is also provided.
+    This is the output after executing the pipeline.
+    ![alt text](image.png)
